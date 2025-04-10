@@ -1,0 +1,15 @@
+{
+  "name": "praxis-backend",
+  "version": "1.0.0",
+  "description": "Praxis Back End Infrastructure Layer",
+  "main": "index.js",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "exceljs": "^4.4.0",
+    "json-2-csv": "^5.5.8",
+    "jsonfile": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multiparty": "^4.2.3",
+    "uuid": "^11.0.3"
+  }
+}

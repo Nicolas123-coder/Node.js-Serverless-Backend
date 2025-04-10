@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Lambda backend base on serverless framework and Nodejs",
+  "scripts": {
+    "test": "mocha --extension js 'src/stacks/**/tests/**/*.test.js'",
+    "coverage": "nyc npm test",
+    "deploy": "serverless deploy",
+    "remove": "serverless remove"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "chai": "4.2.0",
+    "mocha": "^11.1.0",
+    "nyc": "^17.1.0"
+  }
+}

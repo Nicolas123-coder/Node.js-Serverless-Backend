@@ -1,0 +1,61 @@
+service: auth
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  profile: StackSmith
+  stage: ${opt:stage, 'dev'}
+  logRetentionInDays: 90
+  environment:
+    ENABLE_LOGS: true
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - ssm:GetParameter
+        - secretsmanager:GetSecretValue
+      Resource:
+        - "arn:aws:ssm:us-east-1:${aws:accountId}:parameter/JwtSecret"
+        - "arn:aws:secretsmanager:us-east-1:${aws:accountId}:secret:JwtSecret-*"
+
+custom:
+  utilsLayerVersion: 3
+  UtilsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:utilsLayer:${self:custom.utilsLayerVersion}
+  ApiGatewayRestApiId: !ImportValue ApiGatewayRestApiId-${sls:stage}
+  ApiGatewayAuthorizerRoleArn: !ImportValue ApiGatewayAuthorizerRoleArn-${sls:stage}
+
+functions:
+  authorizer:
+    handler: stacks/auth/authorizer.handler
+    layers:
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    environment:
+      TOKEN_SECRET: ${ssm:/aws/reference/secretsmanager/JwtSecret}
+
+resources:
+  Resources:
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: CentralizedAuthorizer
+        RestApiId: !ImportValue ApiGatewayRestApiId-${sls:stage}
+        Type: TOKEN
+        IdentitySource: method.request.header.Authorization
+        AuthorizerUri: !Sub
+          - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaArn}/invocations"
+          - { LambdaArn: !GetAtt AuthorizerLambdaFunction.Arn }
+        AuthorizerCredentials: ${self:custom.ApiGatewayAuthorizerRoleArn}
+        AuthorizerResultTtlInSeconds: 300
+
+  Outputs:
+    AuthorizerLambdaArn:
+      Value: !GetAtt AuthorizerLambdaFunction.Arn
+      Export:
+        Name: AuthorizerLambdaArn-${sls:stage}
+    ApiGatewayAuthorizerId:
+      Value: !Ref ApiGatewayAuthorizer
+      Export:
+        Name: ApiGatewayAuthorizerId-${sls:stage}

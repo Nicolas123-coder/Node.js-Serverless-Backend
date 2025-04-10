@@ -1,0 +1,12 @@
+{
+  "name": "stacksmith-backend",
+  "version": "1.0.0",
+  "description": "StackSmith Back End Layer",
+  "main": "index.js",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonfile": "^6.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^11.0.3"
+  }
+}

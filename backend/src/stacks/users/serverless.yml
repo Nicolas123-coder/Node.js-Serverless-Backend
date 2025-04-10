@@ -1,0 +1,147 @@
+service: users
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  profile: StackSmith
+  stage: ${opt:stage, 'dev'}
+  logRetentionInDays: 90
+  apiGateway:
+    restApiId: !ImportValue ApiGatewayRestApiId-${sls:stage}
+    restApiRootResourceId: !ImportValue ApiGatewayRootResourceId-${sls:stage}
+  environment:
+    STAGE: ${sls:stage}
+    ENABLE_LOGS: true
+    USERS_TABLE: Users-${self:provider.stage}
+    TOKEN_SECRET: ${ssm:/aws/reference/secretsmanager/JwtSecret}
+    CORS_HEADERS: >
+      {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+      }
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Users-${self:provider.stage}"
+        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Users-${self:provider.stage}/index/UsernameIndex"
+        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Users-${self:provider.stage}/index/TenantIndex"
+
+    - Effect: "Allow"
+      Action:
+        - lambda:InvokeFunction
+      Resource: !ImportValue AuthorizerLambdaArn-${sls:stage}
+
+custom:
+  awsLayerVersion: 2
+  AwsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:awsLayer:${self:custom.awsLayerVersion}
+  utilsLayerVersion: 3
+  UtilsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:utilsLayer:${self:custom.utilsLayerVersion}
+  AuthorizerLambdaArn: !ImportValue AuthorizerLambdaArn-${sls:stage}
+  ApiGatewayAuthorizerId: !ImportValue ApiGatewayAuthorizerId-${sls:stage}
+
+functions:
+  createUser:
+    handler: stacks/users/create.handler
+    layers:
+      - ${self:custom.AwsLayerArn}
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: users
+          method: post
+          cors: true
+          authorizer:
+            type: TOKEN
+            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
+            identitySource: method.request.header.Authorization
+
+  getUsers:
+    handler: stacks/users/get.handler
+    layers:
+      - ${self:custom.AwsLayerArn}
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: users
+          method: get
+          cors: true
+          authorizer:
+            type: TOKEN
+            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
+            identitySource: method.request.header.Authorization
+
+  updateUser:
+    handler: stacks/users/update.handler
+    layers:
+      - ${self:custom.AwsLayerArn}
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: users
+          method: put
+          cors: true
+          authorizer:
+            type: TOKEN
+            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
+            identitySource: method.request.header.Authorization
+
+  changePassword:
+    handler: stacks/users/changePassword.handler
+    layers:
+      - ${self:custom.AwsLayerArn}
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: users/change-password
+          method: post
+          cors: true
+          authorizer:
+            type: TOKEN
+            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
+            identitySource: method.request.header.Authorization
+
+  deleteUser:
+    handler: stacks/users/delete.handler
+    layers:
+      - ${self:custom.AwsLayerArn}
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: users/{userId}
+          method: delete
+          cors: true
+          authorizer:
+            type: TOKEN
+            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
+            identitySource: method.request.header.Authorization
+
+  login:
+    handler: stacks/users/login.handler
+    layers:
+      - ${self:custom.AwsLayerArn}
+      - ${self:custom.UtilsLayerArn}
+    memorySize: 256
+    timeout: 10
+    events:
+      - http:
+          path: users/login
+          method: post
+          cors: true

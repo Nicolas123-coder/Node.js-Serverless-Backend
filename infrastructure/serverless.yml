@@ -1,0 +1,218 @@
+service: infrastructure
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  profile: StackSmith
+  stage: ${opt:stage, 'dev'}
+
+resources:
+  Resources:
+    # SECRET MANAGER
+    TokenSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: JwtSecret
+        Description: "JWT Secret"
+        SecretString: ${env:TOKEN_SECRET}
+
+    # SSM
+    SaveApiGatewayRestApiIdParam:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /stacksmith/${sls:stage}/ApiGatewayRestApiId
+        Type: String
+        Value: !Ref ApiGatewayRestApi
+
+    SaveApiGatewayRootResourceIdParam:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /stacksmith/${sls:stage}/ApiGatewayRootResourceId
+        Type: String
+        Value: !GetAtt ApiGatewayRestApi.RootResourceId
+
+    SaveApiGatewayAuthorizerRoleArnParam:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /stacksmith/${sls:stage}/ApiGatewayAuthorizerRoleArn
+        Type: String
+        Value: !GetAtt ApiGatewayAuthorizerRole.Arn
+
+    SaveLambdaRoleArnParam:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: /stacksmith/${sls:stage}/LambdaRoleArn
+        Type: String
+        Value: !GetAtt LambdaRole.Arn
+
+    # DYNAMO DB
+    Users:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Users-${sls:stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: Id
+            AttributeType: S
+          - AttributeName: TenantId
+            AttributeType: S
+          - AttributeName: Username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: Id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: TenantIndex
+            KeySchema:
+              - AttributeName: TenantId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: UsernameIndex
+            KeySchema:
+              - AttributeName: Username
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    Tenants:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Tenants-${sls:stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: TenantId
+            AttributeType: S
+          - AttributeName: Email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: TenantId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: Email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    # API GATEWAY
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: CentralizedAPIGateway
+        Description: "API Gateway compartilhado entre todas as stacks"
+        BinaryMediaTypes:
+          - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        EndpointConfiguration:
+          Types:
+            - EDGE
+
+    # IAM
+    ApiGatewayAuthorizerRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service:
+                  - "apigateway.amazonaws.com"
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: "InvokeAuthorizerFunction-${sls:stage}"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - lambda:InvokeAsync
+                    - lambda:InvokeFunction
+                  Resource: "*"
+
+    LambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: "LambdaDevRole-${self:provider.stage}"
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+          - PolicyName: "LambdaPolicy-${self:provider.stage}"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                # CloudWatch
+                - Effect: Allow
+                  Action:
+                    - logs:*
+                  Resource: "*"
+
+                # DynamoDB
+                - Effect: Allow
+                  Action:
+                    - dynamodb:*
+                  Resource: "*"
+
+                # SQS
+                - Effect: Allow
+                  Action:
+                    - sqs:*
+                  Resource: "*"
+
+                # EventBridge
+                - Effect: Allow
+                  Action:
+                    - events:*
+                  Resource: "*"
+
+                # Lambda
+                - Effect: Allow
+                  Action:
+                    - lambda:*
+                  Resource: "*"
+
+  Outputs:
+    ApiGatewayRestApiId:
+      Value: !Ref ApiGatewayRestApi
+      Export:
+        Name: ApiGatewayRestApiId-${sls:stage}
+
+    ApiGatewayRootResourceId:
+      Value: !GetAtt ApiGatewayRestApi.RootResourceId
+      Export:
+        Name: ApiGatewayRootResourceId-${sls:stage}
+
+    ApiGatewayAuthorizerRoleArn:
+      Value: !GetAtt ApiGatewayAuthorizerRole.Arn
+      Export:
+        Name: ApiGatewayAuthorizerRoleArn-${sls:stage}
+
+    LambdaRoleArn:
+      Value: !GetAtt LambdaRole.Arn
+      Export:
+        Name: LambdaRoleArn-${self:provider.stage}
+
+layers:
+  awsLayer:
+    path: ../backend/src/layers/awsLayer
+    name: awsLayer
+    compatibleRuntimes:
+      - nodejs20.x
+
+  utilsLayer:
+    path: ../backend/src/layers/utilsLayer
+    name: utilsLayer
+    compatibleRuntimes:
+      - nodejs20.x

@@ -1,0 +1,13 @@
+{
+  "name": "stacksmith-backend",
+  "version": "1.0.0",
+  "description": "StackSmith Back End Layer",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.666.0",
+    "@aws-sdk/client-s3": "^3.666.0",
+    "@aws-sdk/client-ses": "^3.716.0",
+    "@aws-sdk/client-sqs": "^3.750.0",
+    "@aws-sdk/util-dynamodb": "^3.666.0"
+  }
+}
