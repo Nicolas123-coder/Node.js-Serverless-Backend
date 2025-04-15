@@ -3,10 +3,6 @@ const loginHandler = require("../handlers/loginHandler.js");
 
 describe("👤 Users Stack", () => {
   describe("🧪 Login Handler", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const tableName = "Users-Table";
     const tokenSecret = "super-secret-token";
 
@@ -14,6 +10,36 @@ describe("👤 Users Stack", () => {
       info: () => {},
       warn: () => {},
       error: () => {},
+    };
+
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      badRequest: (msg) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+      buildResponse: (code, payload) => ({
+        statusCode: code,
+        headers: defaultHeaders,
+        body: JSON.stringify(payload),
+      }),
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      serverError: (msg) => ({
+        statusCode: 500,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
     };
 
     it("retorna 400 se username ou password não forem informados", async () => {
@@ -24,8 +50,8 @@ describe("👤 Users Stack", () => {
         {}, // password
         {}, // jwt
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body,
         tokenSecret
       );
@@ -53,8 +79,8 @@ describe("👤 Users Stack", () => {
         {}, // password
         {}, // jwt
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body,
         tokenSecret
       );
@@ -91,8 +117,8 @@ describe("👤 Users Stack", () => {
         mockPassword,
         {}, // jwt
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body,
         tokenSecret
       );
@@ -134,8 +160,8 @@ describe("👤 Users Stack", () => {
         mockPassword,
         mockJwt,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body,
         tokenSecret
       );

@@ -3,10 +3,6 @@ const deleteUserHandler = require("../handlers/deleteUserHandler.js");
 
 describe("👤 Users Stack", () => {
   describe("🧪 Delete User Handler", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const tableName = "Users-Table";
 
     const mockLogger = {
@@ -15,13 +11,38 @@ describe("👤 Users Stack", () => {
       error: () => {},
     };
 
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      badRequest: (msg) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+      buildResponse: (code, payload) => ({
+        statusCode: code,
+        headers: defaultHeaders,
+        body: JSON.stringify(payload),
+      }),
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+    };
+
     it("retorna 400 se userId não for informado", async () => {
       const mockDynamoDB = {};
 
       const response = await deleteUserHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         {} // pathParameters vazio
       );
@@ -41,7 +62,7 @@ describe("👤 Users Stack", () => {
       const response = await deleteUserHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         pathParameters
       );
@@ -62,7 +83,7 @@ describe("👤 Users Stack", () => {
       const response = await deleteUserHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         pathParameters
       );

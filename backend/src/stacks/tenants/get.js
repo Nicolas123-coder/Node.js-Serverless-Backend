@@ -1,11 +1,19 @@
 const { dynamoDB } = require("/opt/aws");
-const { logger } = require("/opt/utils");
+const { logger, response } = require("/opt/utils");
 
-const corsHeaders = JSON.parse(process.env.CORS_HEADERS);
 const getTenants = require("./handlers/getHandler");
 
 exports.handler = async () => {
   const tableName = process.env.TENANTS_TABLE;
 
-  return await getTenants(dynamoDB, logger, corsHeaders, tableName);
+  try {
+    return await getTenants(dynamoDB, logger, response, tableName);
+  } catch (error) {
+    logger.error("Unhandled error in getTenants", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return response.serverError("Internal Server Error");
+  }
 };

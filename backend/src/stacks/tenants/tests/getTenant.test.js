@@ -3,8 +3,24 @@ const getHandler = require("../handlers/getHandler.js");
 
 describe("🏢 Tenants Stack", () => {
   describe("🧪 Get Tenants Handler", () => {
-    const corsHeaders = {
+    const defaultHeaders = {
+      "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      serverError: (msg) => ({
+        statusCode: 500,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
     };
 
     it("retorna tenants com sucesso (status 200)", async () => {
@@ -23,12 +39,12 @@ describe("🏢 Tenants Stack", () => {
       const response = await getHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table"
       );
 
       expect(response.statusCode).to.equal(200);
-      expect(response.headers).to.deep.equal(corsHeaders);
+      expect(response.headers).to.deep.equal(defaultHeaders);
 
       const tenants = JSON.parse(response.body);
       expect(tenants).to.be.an("array").with.lengthOf(2);
@@ -50,7 +66,7 @@ describe("🏢 Tenants Stack", () => {
       const response = await getHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table"
       );
 

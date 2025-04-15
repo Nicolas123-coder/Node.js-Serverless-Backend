@@ -3,16 +3,37 @@ const createUserHandler = require("../handlers/createUserHandler.js");
 
 describe("👤 Users Stack", () => {
   describe("🧪 Create User Handler", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const tableName = "Users-Table";
 
     const mockLogger = {
       info: () => {},
       warn: () => {},
       error: () => {},
+    };
+
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      badRequest: (msg) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+      buildResponse: (code, data) => ({
+        statusCode: code,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      created: (data) => ({
+        statusCode: 201,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
     };
 
     const validBody = {
@@ -25,7 +46,7 @@ describe("👤 Users Stack", () => {
 
     it("retorna 400 se faltar campos obrigatórios", async () => {
       const body = {
-        email: "john@example.com", // faltando vários campos
+        email: "john@example.com", // faltando campos obrigatórios
       };
 
       const mockDynamoDB = {};
@@ -37,8 +58,8 @@ describe("👤 Users Stack", () => {
         mockUuid,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body
       );
 
@@ -59,8 +80,8 @@ describe("👤 Users Stack", () => {
         mockUuid,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         validBody
       );
 
@@ -74,8 +95,8 @@ describe("👤 Users Stack", () => {
 
     it("cria usuário com sucesso e retorna 201", async () => {
       const mockDynamoDB = {
-        queryItems: async () => [], // nenhum usuário encontrado
-        putItem: async () => {}, // mock sem retorno
+        queryItems: async () => [],
+        putItem: async () => {},
       };
 
       const mockUuid = {
@@ -98,8 +119,8 @@ describe("👤 Users Stack", () => {
         mockUuid,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body
       );
 

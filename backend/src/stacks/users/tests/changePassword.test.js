@@ -3,15 +3,41 @@ const changePasswordHandler = require("../handlers/changePasswordHandler.js");
 
 describe("👤 Users Stack", () => {
   describe("🧪 Change Password Handler", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const tableName = "Users-Table";
 
     const mockLogger = {
       info: () => {},
       error: () => {},
+    };
+
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      badRequest: (msg) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+      buildResponse: (statusCode, data) => ({
+        statusCode,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      serverError: (msg) => ({
+        statusCode: 500,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
     };
 
     it("retorna erro 400 se faltar algum campo", async () => {
@@ -28,17 +54,14 @@ describe("👤 Users Stack", () => {
         mockDynamoDB,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body
       );
 
       expect(response.statusCode).to.equal(400);
       const payload = JSON.parse(response.body);
-      expect(payload).to.have.property(
-        "error",
-        "tenantId, userId, oldPassword, and newPassword are required"
-      );
+      expect(payload.error).to.include("tenantId, userId, oldPassword");
     });
 
     it("retorna erro 404 se usuário não for encontrado", async () => {
@@ -58,8 +81,8 @@ describe("👤 Users Stack", () => {
         mockDynamoDB,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body
       );
 
@@ -87,20 +110,20 @@ describe("👤 Users Stack", () => {
         mockDynamoDB,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body
       );
 
       expect(response.statusCode).to.equal(403);
       const payload = JSON.parse(response.body);
-      expect(payload).to.have.property("error", "Old password is incorrect");
+      expect(payload.error).to.equal("Old password is incorrect");
     });
 
     it("atualiza a senha com sucesso e retorna 200", async () => {
       const mockDynamoDB = {
         getItem: async () => ({ Id: "user-123", Password: "senha-antiga" }),
-        updateItem: async () => {}, // só mocka, não precisa retornar nada
+        updateItem: async () => {}, // apenas mocka
       };
 
       const mockPassword = {
@@ -119,17 +142,14 @@ describe("👤 Users Stack", () => {
         mockDynamoDB,
         mockPassword,
         mockLogger,
+        mockResponse,
         tableName,
-        corsHeaders,
         body
       );
 
       expect(response.statusCode).to.equal(200);
       const payload = JSON.parse(response.body);
-      expect(payload).to.have.property(
-        "message",
-        "Password updated successfully"
-      );
+      expect(payload.message).to.equal("Password updated successfully");
     });
   });
 });

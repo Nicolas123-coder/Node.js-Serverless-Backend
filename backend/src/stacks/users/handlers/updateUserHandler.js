@@ -1,67 +1,64 @@
 const updateUserHandler = async (
   dynamoDB,
   logger,
-  corsHeaders,
+  response,
   tableName,
   body
 ) => {
-  logger.info("UPDATE USER EVENT", { body });
+  logger.info("EVENT", { body });
 
   const { tenantId, userId, role, profileImage, active } = body;
 
   if (!tenantId || !userId) {
-    return {
-      statusCode: 400,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "tenantId and userId are required" }),
-    };
+    return response.badRequest("tenantId and userId are required");
   }
 
-  const existingUser = await dynamoDB.getItem(tableName, { Id: userId });
+  try {
+    const existingUser = await dynamoDB.getItem(tableName, { Id: userId });
 
-  if (!existingUser) {
-    logger.warn("User not found", { userId });
-    return {
-      statusCode: 404,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "User not found" }),
-    };
-  }
+    if (!existingUser) {
+      logger.warn("User not found", { userId });
+      return response.buildResponse(404, { error: "User not found" });
+    }
 
-  let updateExpression = "SET #role = :role";
-  let expressionAttributeValues = { ":role": role };
-  let expressionAttributeNames = { "#role": "Role" };
+    let updateExpression = "SET #role = :role";
+    const expressionAttributeValues = { ":role": role };
+    const expressionAttributeNames = { "#role": "Role" };
 
-  if (profileImage !== undefined) {
-    updateExpression += ", ProfileImage = :profileImage";
-    expressionAttributeValues[":profileImage"] = profileImage;
-  }
+    if (profileImage !== undefined) {
+      updateExpression += ", ProfileImage = :profileImage";
+      expressionAttributeValues[":profileImage"] = profileImage;
+    }
 
-  if (active !== undefined) {
-    updateExpression += ", Active = :active";
-    expressionAttributeValues[":active"] = active;
-  }
+    if (active !== undefined) {
+      updateExpression += ", Active = :active";
+      expressionAttributeValues[":active"] = active;
+    }
 
-  const updatedUser = await dynamoDB.updateItem(
-    tableName,
-    { Id: userId },
-    updateExpression,
-    expressionAttributeValues,
-    expressionAttributeNames
-  );
+    const updatedUser = await dynamoDB.updateItem(
+      tableName,
+      { Id: userId },
+      updateExpression,
+      expressionAttributeValues,
+      expressionAttributeNames
+    );
 
-  logger.info("User updated successfully", { userId });
+    logger.info("User updated successfully", { userId });
 
-  delete updatedUser.Password;
+    delete updatedUser.Password;
 
-  return {
-    statusCode: 200,
-    headers: corsHeaders,
-    body: JSON.stringify({
+    return response.success({
       message: "User updated successfully",
       user: updatedUser,
-    }),
-  };
+    });
+  } catch (error) {
+    logger.error("Error updating user", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return response.serverError("Internal Server Error");
+  }
 };
 
 module.exports = updateUserHandler;

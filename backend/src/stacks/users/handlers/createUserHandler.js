@@ -3,8 +3,8 @@ const createUserHandler = async (
   uuid,
   password,
   logger,
+  response,
   tableName,
-  corsHeaders,
   body
 ) => {
   logger.info("EVENT", { body });
@@ -13,63 +13,60 @@ const createUserHandler = async (
     body;
 
   if (!username || !email || !tenantId || !role || !createdBy) {
-    logger.warn("Create user Attempt Failed - Missing Fields");
-    return {
-      statusCode: 400,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Missing required fields" }),
-    };
+    logger.warn("Create user failed - Missing fields");
+    return response.badRequest("Missing required fields");
   }
 
-  const existingUser = await dynamoDB.queryItems(
-    tableName,
-    "Username = :username",
-    { ":username": username },
-    "UsernameIndex"
-  );
+  try {
+    const existingUser = await dynamoDB.queryItems(
+      tableName,
+      "Username = :username",
+      { ":username": username },
+      "UsernameIndex"
+    );
 
-  if (existingUser.length > 0) {
-    logger.warn("Create user Failed - User already exists");
-    return {
-      statusCode: 409,
-      headers: corsHeaders,
-      body: JSON.stringify({
+    if (existingUser.length > 0) {
+      logger.warn("Create user failed - User already exists");
+      return response.buildResponse(409, {
         error: "User with this username already exists",
-      }),
+      });
+    }
+
+    const rawPassword = password.generateRandomPassword();
+    const hashedPassword = await password.hashPassword(rawPassword);
+
+    const newUser = {
+      TenantId: tenantId,
+      Id: uuid.generateUuid(),
+      Username: username,
+      Email: email,
+      Password: hashedPassword,
+      Role: role,
+      CreatedBy: createdBy,
+      CreatedAt: new Date().toISOString(),
+      ProfileImage: profileImage || null,
+      Active: active !== undefined ? active : true,
     };
-  }
 
-  const rawPassword = password.generateRandomPassword();
-  const hashedPassword = await password.hashPassword(rawPassword);
+    await dynamoDB.putItem(tableName, newUser);
 
-  const newUser = {
-    TenantId: tenantId,
-    Id: uuid.generateUuid(),
-    Username: username,
-    Email: email,
-    Password: hashedPassword,
-    Role: role,
-    CreatedBy: createdBy,
-    CreatedAt: new Date().toISOString(),
-    ProfileImage: profileImage || null,
-    Active: active !== undefined ? active : true,
-  };
+    logger.info("User created", { Id: newUser.Id });
 
-  await dynamoDB.putItem(tableName, newUser);
-
-  logger.info("User created", { Id: newUser.Id });
-
-  return {
-    statusCode: 201,
-    headers: corsHeaders,
-    body: JSON.stringify({
+    return response.created({
       user: {
         ...newUser,
-        Password: undefined, // nunca retornar senha no corpo
+        Password: undefined,
       },
-      password: rawPassword, // senha original pra onboarding
-    }),
-  };
+      password: rawPassword,
+    });
+  } catch (error) {
+    logger.error("Error creating user", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return response.serverError("Internal Server Error");
+  }
 };
 
 module.exports = createUserHandler;

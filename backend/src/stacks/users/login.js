@@ -1,7 +1,6 @@
 const { dynamoDB } = require("/opt/aws");
-const { password, jwt, logger } = require("/opt/utils");
+const { password, jwt, logger, response } = require("/opt/utils");
 
-const corsHeaders = JSON.parse(process.env.CORS_HEADERS);
 const loginHandler = require("./handlers/loginHandler");
 
 exports.handler = async (event) => {
@@ -15,8 +14,8 @@ exports.handler = async (event) => {
       password,
       jwt,
       logger,
+      response,
       tableName,
-      corsHeaders,
       body,
       tokenSecret
     );
@@ -26,10 +25,6 @@ exports.handler = async (event) => {
       stack: error.stack,
     });
 
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Internal Server Error" }),
-    };
+    return response.serverError("Internal Server Error");
   }
 };

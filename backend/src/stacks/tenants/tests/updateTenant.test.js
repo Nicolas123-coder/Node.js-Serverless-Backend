@@ -3,13 +3,35 @@ const updateHandler = require("../handlers/updateHandler.js");
 
 describe("🏢 Tenants Stack", () => {
   describe("🧪 Update Tenant Handler.js", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const mockLogger = {
       info: () => {},
       warn: () => {},
+      error: () => {}, // necessário para o try/catch
+    };
+
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      badRequest: (message) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: message }),
+      }),
+      serverError: (message) => ({
+        statusCode: 500,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: message }),
+      }),
     };
 
     const mockDynamoDB = {
@@ -20,7 +42,7 @@ describe("🏢 Tenants Stack", () => {
       const response = await updateHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         { name: "Tenant X" } // sem tenantId
       );
@@ -34,7 +56,7 @@ describe("🏢 Tenants Stack", () => {
       const response = await updateHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         {
           tenantId: "abc",
@@ -61,7 +83,7 @@ describe("🏢 Tenants Stack", () => {
       const response = await updateHandler(
         dynamoMock,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         {
           tenantId: "tenant-123",
@@ -89,7 +111,7 @@ describe("🏢 Tenants Stack", () => {
       const response = await updateHandler(
         dynamoMock,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         {
           tenantId: "tenant-789",
@@ -98,7 +120,7 @@ describe("🏢 Tenants Stack", () => {
       );
 
       expect(response.statusCode).to.equal(200);
-      expect(receivedAttrs.active).to.equal(false);
+      expect(receivedAttrs[":a"]).to.equal(false); // atualizado: agora é ":a"
     });
   });
 });

@@ -3,79 +3,77 @@ const loginHandler = async (
   password,
   jwt,
   logger,
+  response,
   tableName,
-  corsHeaders,
   body,
   tokenSecret
 ) => {
-  logger.info("LOGIN EVENT", { body });
+  logger.info("EVENT", { body });
 
   const { username, password: userPassword } = body;
 
   if (!username || !userPassword) {
     logger.warn("Login Attempt Failed - Missing Fields");
-    return {
-      statusCode: 400,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Username and password are required" }),
-    };
+    return response.badRequest("Username and password are required");
   }
 
-  const users = await dynamoDB.queryItems(
-    tableName,
-    "Username = :username",
-    { ":username": username },
-    "UsernameIndex"
-  );
+  try {
+    const users = await dynamoDB.queryItems(
+      tableName,
+      "Username = :username",
+      { ":username": username },
+      "UsernameIndex"
+    );
 
-  const user = users[0];
+    const user = users[0];
 
-  if (!user) {
-    logger.warn("Login Failed - User Not Found", { username });
-    return {
-      statusCode: 401,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Invalid username or password" }),
-    };
-  }
+    const failResponse = () =>
+      response.buildResponse(401, {
+        error: "Invalid username or password",
+      });
 
-  const passwordMatch = await password.comparePassword(
-    userPassword,
-    user.Password
-  );
+    if (!user) {
+      logger.warn("Login Failed - User Not Found", { username });
+      return failResponse();
+    }
 
-  if (!passwordMatch) {
-    logger.warn("Login Failed - Incorrect Password", { username });
-    return {
-      statusCode: 401,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Invalid username or password" }),
-    };
-  }
+    const passwordMatch = await password.comparePassword(
+      userPassword,
+      user.Password
+    );
 
-  const token = jwt.generateToken(
-    {
-      userId: user.Id,
-      tenantId: user.TenantId,
-      role: user.Role,
-    },
-    tokenSecret,
-    "3h"
-  );
+    if (!passwordMatch) {
+      logger.warn("Login Failed - Incorrect Password", { username });
+      return failResponse();
+    }
 
-  logger.info("Login successful", { userId: user.Id });
+    const token = jwt.generateToken(
+      {
+        userId: user.Id,
+        tenantId: user.TenantId,
+        role: user.Role,
+      },
+      tokenSecret,
+      "3h"
+    );
 
-  return {
-    statusCode: 200,
-    headers: corsHeaders,
-    body: JSON.stringify({
+    logger.info("Login successful", { userId: user.Id });
+
+    return response.success({
       token,
       tenantId: user.TenantId,
       profileImage: user.ProfileImage,
       id: user.Id,
       role: user.Role,
-    }),
-  };
+    });
+  } catch (error) {
+    logger.error("Error during login", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return response.serverError("Internal Server Error");
+  }
 };
 
 module.exports = loginHandler;

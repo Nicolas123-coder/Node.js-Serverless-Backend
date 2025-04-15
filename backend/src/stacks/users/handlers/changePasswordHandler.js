@@ -2,63 +2,58 @@ const changePasswordHandler = async (
   dynamoDB,
   password,
   logger,
+  response,
   tableName,
-  corsHeaders,
   body
 ) => {
-  logger.info("CHANGE PASSWORD EVENT", { body });
+  logger.info("EVENT", { body });
 
   const { tenantId, userId, oldPassword, newPassword } = body;
 
   if (!tenantId || !userId || !oldPassword || !newPassword) {
-    return {
-      statusCode: 400,
-      headers: corsHeaders,
-      body: JSON.stringify({
-        error: "tenantId, userId, oldPassword, and newPassword are required",
-      }),
-    };
+    return response.badRequest(
+      "tenantId, userId, oldPassword, and newPassword are required"
+    );
   }
 
-  const user = await dynamoDB.getItem(tableName, { Id: userId });
+  try {
+    const user = await dynamoDB.getItem(tableName, { Id: userId });
 
-  if (!user) {
-    return {
-      statusCode: 404,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "User not found" }),
-    };
+    if (!user) {
+      return response.buildResponse(404, { error: "User not found" });
+    }
+
+    const isOldPasswordValid = await password.comparePassword(
+      oldPassword,
+      user.Password
+    );
+
+    if (!isOldPasswordValid) {
+      return response.buildResponse(403, {
+        error: "Old password is incorrect",
+      });
+    }
+
+    const hashedNewPassword = await password.hashPassword(newPassword);
+
+    await dynamoDB.updateItem(
+      tableName,
+      { Id: userId },
+      "SET Password = :password",
+      { ":password": hashedNewPassword }
+    );
+
+    logger.info("Password updated successfully", { userId });
+
+    return response.success({ message: "Password updated successfully" });
+  } catch (error) {
+    logger.error("Error changing password", {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return response.serverError("Internal Server Error");
   }
-
-  const isOldPasswordValid = await password.comparePassword(
-    oldPassword,
-    user.Password
-  );
-
-  if (!isOldPasswordValid) {
-    return {
-      statusCode: 403,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Old password is incorrect" }),
-    };
-  }
-
-  const hashedNewPassword = await password.hashPassword(newPassword);
-
-  await dynamoDB.updateItem(
-    tableName,
-    { Id: userId },
-    "SET Password = :password",
-    { ":password": hashedNewPassword }
-  );
-
-  logger.info("Password updated successfully", { userId });
-
-  return {
-    statusCode: 200,
-    headers: corsHeaders,
-    body: JSON.stringify({ message: "Password updated successfully" }),
-  };
 };
 
 module.exports = changePasswordHandler;

@@ -3,10 +3,6 @@ const updateUserHandler = require("../handlers/updateUserHandler.js");
 
 describe("👤 Users Stack", () => {
   describe("🧪 Update User Handler", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const tableName = "Users-Table";
 
     const mockLogger = {
@@ -15,13 +11,43 @@ describe("👤 Users Stack", () => {
       error: () => {},
     };
 
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      badRequest: (msg) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+      buildResponse: (code, payload) => ({
+        statusCode: code,
+        headers: defaultHeaders,
+        body: JSON.stringify(payload),
+      }),
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      serverError: (msg) => ({
+        statusCode: 500,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+    };
+
     it("retorna 400 se tenantId ou userId não forem informados", async () => {
       const body = { role: "admin" };
 
       const response = await updateUserHandler(
         {}, // dynamoDB
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         body
       );
@@ -48,7 +74,7 @@ describe("👤 Users Stack", () => {
       const response = await updateUserHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         body
       );
@@ -71,6 +97,7 @@ describe("👤 Users Stack", () => {
           Role: "admin",
           ProfileImage: "https://img.com/avatar.png",
           Active: true,
+          Password: "senha-velha",
         }),
       };
 
@@ -85,7 +112,7 @@ describe("👤 Users Stack", () => {
       const response = await updateUserHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         body
       );

@@ -3,10 +3,6 @@ const listUsersHandler = require("../handlers/getUsersHandler.js");
 
 describe("👤 Users Stack", () => {
   describe("🧪 List Users Handler", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const tableName = "Users-Table";
 
     const mockLogger = {
@@ -15,13 +11,38 @@ describe("👤 Users Stack", () => {
       error: () => {},
     };
 
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      badRequest: (msg) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+      success: (data) => ({
+        statusCode: 200,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      serverError: (msg) => ({
+        statusCode: 500,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: msg }),
+      }),
+    };
+
     it("retorna 400 se tenantId não for informado", async () => {
       const mockDynamoDB = {};
 
       const response = await listUsersHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         {} // queryStringParameters vazio
       );
@@ -56,16 +77,15 @@ describe("👤 Users Stack", () => {
       const response = await listUsersHandler(
         mockDynamoDB,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         tableName,
         queryStringParameters
       );
 
       expect(response.statusCode).to.equal(200);
-      expect(response.headers).to.deep.equal(corsHeaders);
+      expect(response.headers).to.deep.equal(defaultHeaders);
 
       const users = JSON.parse(response.body);
-
       expect(users).to.be.an("array").with.lengthOf(2);
       users.forEach((user) => {
         expect(user).to.not.have.property("Password");

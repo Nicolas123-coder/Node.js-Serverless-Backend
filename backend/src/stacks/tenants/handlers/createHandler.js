@@ -2,7 +2,7 @@ const createHandler = async (
   dynamoDB,
   uuid,
   logger,
-  corsHeaders,
+  response,
   tableName,
   body
 ) => {
@@ -10,11 +10,8 @@ const createHandler = async (
 
   if (!name || !modules || !Array.isArray(modules)) {
     logger.warn("Create tenant attempt failed - Missing or invalid fields");
-    return {
-      statusCode: 400,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "Missing or invalid required fields" }),
-    };
+
+    return response.badRequest("Missing or invalid required fields");
   }
 
   const newTenant = {
@@ -30,11 +27,7 @@ const createHandler = async (
 
   logger.info("Tenant created successfully", { tenant: newTenant });
 
-  return {
-    statusCode: 201,
-    headers: corsHeaders,
-    body: JSON.stringify({ tenant: newTenant }),
-  };
+  return response.created({ tenant: newTenant });
 };
 
 module.exports = createHandler;

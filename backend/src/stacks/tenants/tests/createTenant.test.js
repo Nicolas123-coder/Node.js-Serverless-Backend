@@ -3,10 +3,6 @@ const createHandler = require("../handlers/createHandler.js");
 
 describe("🏢 Tenants Stack", () => {
   describe("🧪 Create Tenant Handler.js", () => {
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-    };
-
     const mockUuid = {
       generateUuid: () => "mocked-uuid-123",
     };
@@ -20,6 +16,26 @@ describe("🏢 Tenants Stack", () => {
       warn: () => {},
     };
 
+    const defaultHeaders = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    };
+
+    const mockResponse = {
+      created: (data) => ({
+        statusCode: 201,
+        headers: defaultHeaders,
+        body: JSON.stringify(data),
+      }),
+      badRequest: (message) => ({
+        statusCode: 400,
+        headers: defaultHeaders,
+        body: JSON.stringify({ error: message }),
+      }),
+    };
+
     it("cria tenant com sucesso", async () => {
       const body = {
         name: "Tenant Teste",
@@ -30,13 +46,13 @@ describe("🏢 Tenants Stack", () => {
         mockDynamoDB,
         mockUuid,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         body
       );
 
       expect(response.statusCode).to.equal(201);
-      expect(response.headers).to.deep.equal(corsHeaders);
+      expect(response.headers).to.deep.equal(defaultHeaders);
 
       const payload = JSON.parse(response.body);
       expect(payload.tenant.Name).to.equal("Tenant Teste");
@@ -51,7 +67,7 @@ describe("🏢 Tenants Stack", () => {
         mockDynamoDB,
         mockUuid,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         body
       );
@@ -71,7 +87,7 @@ describe("🏢 Tenants Stack", () => {
         mockDynamoDB,
         mockUuid,
         mockLogger,
-        corsHeaders,
+        mockResponse,
         "Tenants-Table",
         body
       );
