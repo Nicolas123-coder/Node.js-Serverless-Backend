@@ -4,9 +4,7 @@
   "description": "Lambda backend base on serverless framework and Nodejs",
   "scripts": {
     "test": "mocha --extension js 'src/stacks/**/tests/**/*.test.js'",
-    "coverage": "nyc npm test",
-    "deploy": "serverless deploy",
-    "remove": "serverless remove"
+    "coverage": "nyc npm test"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
