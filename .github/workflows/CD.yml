@@ -1,4 +1,4 @@
-name: 🚀 CD
+name: CD
 
 on:
   push:
@@ -70,7 +70,7 @@ jobs:
                   echo "🔐 Using TOKEN_SECRET for infrastructure stack"
                   TOKEN_SECRET="$TOKEN_SECRET" serverless deploy --stage prod
                 else
-                  serverless deploy --stage dev --aws-profile DevSandbox
+                  serverless deploy --stage prod --aws-profile DevSandbox
                 fi
 
                 cd - > /dev/null
