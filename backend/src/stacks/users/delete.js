@@ -3,6 +3,9 @@ const { logger, response } = require("/opt/utils");
 
 const deleteUserHandler = require("./handlers/deleteUserHandler");
 
+// TESTE 12345678
+console.debug("testeede");
+
 exports.handler = async (event) => {
   try {
     const tableName = process.env.USERS_TABLE;
