@@ -4,8 +4,6 @@ const getHandler = async (dynamoDB, logger, response, tableName) => {
   try {
     const tenants = await dynamoDB.scanVanilla(tableName);
 
-    console.log("testttt ci...");
-
     return response.success(tenants);
   } catch (error) {
     logger.error("Error listing tenants", {
