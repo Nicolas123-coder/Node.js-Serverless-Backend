@@ -4,7 +4,7 @@ provider:
   name: aws
   runtime: nodejs20.x
   region: us-east-1
-  profile: StackSmith
+  profile: DevSandbox
   stage: ${opt:stage, 'dev'}
 
 resources:
@@ -21,28 +21,28 @@ resources:
     SaveApiGatewayRestApiIdParam:
       Type: AWS::SSM::Parameter
       Properties:
-        Name: /stacksmith/${sls:stage}/ApiGatewayRestApiId
+        Name: /DevSandbox/${sls:stage}/ApiGatewayRestApiId
         Type: String
         Value: !Ref ApiGatewayRestApi
 
     SaveApiGatewayRootResourceIdParam:
       Type: AWS::SSM::Parameter
       Properties:
-        Name: /stacksmith/${sls:stage}/ApiGatewayRootResourceId
+        Name: /DevSandbox/${sls:stage}/ApiGatewayRootResourceId
         Type: String
         Value: !GetAtt ApiGatewayRestApi.RootResourceId
 
     SaveApiGatewayAuthorizerRoleArnParam:
       Type: AWS::SSM::Parameter
       Properties:
-        Name: /stacksmith/${sls:stage}/ApiGatewayAuthorizerRoleArn
+        Name: /DevSandbox/${sls:stage}/ApiGatewayAuthorizerRoleArn
         Type: String
         Value: !GetAtt ApiGatewayAuthorizerRole.Arn
 
     SaveLambdaRoleArnParam:
       Type: AWS::SSM::Parameter
       Properties:
-        Name: /stacksmith/${sls:stage}/LambdaRoleArn
+        Name: /DevSandbox/${sls:stage}/LambdaRoleArn
         Type: String
         Value: !GetAtt LambdaRole.Arn
 

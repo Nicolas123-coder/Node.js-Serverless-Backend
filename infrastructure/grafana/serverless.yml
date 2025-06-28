@@ -1,0 +1,131 @@
+service: grafana-monitoring
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: nodejs20.x
+  profile: DevSandbox
+  stage: ${opt:stage, 'dev'}
+
+resources:
+  Resources:
+    GrafanaVPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
+        Tags:
+          - Key: Name
+            Value: grafana-vpc
+
+    GrafanaSubnet:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: !Ref GrafanaVPC
+        CidrBlock: 10.0.1.0/24
+        MapPublicIpOnLaunch: true
+        AvailabilityZone: us-east-1a
+        Tags:
+          - Key: Name
+            Value: grafana-subnet
+
+    GrafanaInternetGateway:
+      Type: AWS::EC2::InternetGateway
+
+    GrafanaVPCGatewayAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        VpcId: !Ref GrafanaVPC
+        InternetGatewayId: !Ref GrafanaInternetGateway
+
+    GrafanaRouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId: !Ref GrafanaVPC
+
+    GrafanaRoute:
+      Type: AWS::EC2::Route
+      DependsOn: GrafanaVPCGatewayAttachment
+      Properties:
+        RouteTableId: !Ref GrafanaRouteTable
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId: !Ref GrafanaInternetGateway
+
+    GrafanaSubnetRouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        SubnetId: !Ref GrafanaSubnet
+        RouteTableId: !Ref GrafanaRouteTable
+
+    GrafanaSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Allow Grafana UI
+        VpcId: !Ref GrafanaVPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 3000
+            ToPort: 3000
+            CidrIp: 0.0.0.0/0
+
+    GrafanaCluster:
+      Type: AWS::ECS::Cluster
+
+    GrafanaTaskExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - ecs-tasks.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: ecsTaskExecution
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource: "*"
+
+    GrafanaTaskDefinition:
+      Type: AWS::ECS::TaskDefinition
+      Properties:
+        RequiresCompatibilities:
+          - FARGATE
+        Cpu: 256
+        Memory: 512
+        NetworkMode: awsvpc
+        ExecutionRoleArn: !GetAtt GrafanaTaskExecutionRole.Arn
+        ContainerDefinitions:
+          - Name: grafana
+            Image: grafana/grafana:latest
+            PortMappings:
+              - ContainerPort: 3000
+            Environment:
+              - Name: GF_SECURITY_ADMIN_PASSWORD
+                Value: admin
+
+    GrafanaService:
+      Type: AWS::ECS::Service
+      DependsOn:
+        - GrafanaVPCGatewayAttachment
+      Properties:
+        Cluster: !Ref GrafanaCluster
+        LaunchType: FARGATE
+        DesiredCount: 1
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: ENABLED
+            Subnets:
+              - !Ref GrafanaSubnet
+            SecurityGroups:
+              - !Ref GrafanaSecurityGroup
+        TaskDefinition: !Ref GrafanaTaskDefinition
