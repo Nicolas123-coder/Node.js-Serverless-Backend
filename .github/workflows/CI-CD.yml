@@ -1,28 +1,50 @@
-name: CD
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
-
-  workflow_run:
-    workflows:
-      - CI
-    types:
-      - completed
+    paths:
+      - "backend/**"
+  pull_request:
+    paths:
+      - "backend/**"
 
 jobs:
-  deploy:
+  ci:
+    name: 🧪 Run Tests
     runs-on: ubuntu-latest
-    if: >
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🟢 Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 📦 Install dependencies
+        run: npm install
+
+      - name: 🧪 Run tests
+        run: npm run test
+
+  cd:
+    name: 🚀 Deploy Serverless Stacks
+    needs: ci
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # importante para git diff funcionar corretamente
+          fetch-depth: 0  # necessário pro git diff funcionar
 
       - name: 🔑 Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
