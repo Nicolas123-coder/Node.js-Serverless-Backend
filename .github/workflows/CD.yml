@@ -31,7 +31,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: sa-east-1
 
-      - name: 🛠️ Create AWS profile file
+      - name: 🔑 Create AWS profile file
         run: |
           mkdir -p ~/.aws
           cat <<EOF > ~/.aws/credentials
@@ -45,10 +45,10 @@ jobs:
         with:
           node-version: "18.x"
 
-      - name: 📥 Install Serverless
+      - name: ⚡️ Install Serverless
         run: npm install -g serverless@3
 
-      - name: 🚀 Deploy Stacks with Diff Detection
+      - name: ⚡️ Deploy Serverless Stacks
         env:
           TOKEN_SECRET: ${{ secrets.TOKEN_SECRET }}
         run: |
@@ -63,7 +63,7 @@ jobs:
             if [ -f "$path/serverless.yml" ]; then
               echo "🔍 Checking for changes in $path..."
               if git diff --name-only HEAD^ HEAD | grep "^$path"; then
-                echo "📦 Changes detected in $path. Deploying..."
+                echo "⚡️ Changes detected in $path. Deploying..."
                 cd "$path"
 
                 if [[ "$path" == "infrastructure" ]]; then
