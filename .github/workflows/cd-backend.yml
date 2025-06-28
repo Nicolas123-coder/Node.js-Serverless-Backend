@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Garantir acesso ao histórico completo
 
       - name: 🔑 Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -37,7 +39,7 @@ jobs:
       - name: 📥 Install Serverless
         run: npm install -g serverless@3
 
-      - name: 🚀 Deploy Stacks
+      - name: 🚀 Deploy Stacks with Diff Detection
         run: |
           DEPLOY_PATHS=(
             "backend/src/stacks/auth"
@@ -49,13 +51,13 @@ jobs:
           for path in "${DEPLOY_PATHS[@]}"; do
             if [ -f "$path/serverless.yml" ]; then
               echo "🔍 Checking for changes in $path..."
-              if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^$path"; then
-                echo "📦 Deploying stack at $path"
+              if git diff --name-only HEAD^ HEAD | grep "^$path"; then
+                echo "📦 Changes detected in $path. Deploying..."
                 cd "$path"
                 serverless deploy --stage dev --aws-profile DevSandbox
                 cd - > /dev/null
               else
-                echo "✅ No changes in $path, skipping..."
+                echo "✅ No changes in $path, skipping deploy."
               fi
             fi
           done
