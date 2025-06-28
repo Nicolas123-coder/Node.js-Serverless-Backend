@@ -3,6 +3,8 @@ const { logger, response } = require("/opt/utils");
 
 const listUsersHandler = require("./handlers/getUsersHandler");
 
+// REMOVER DEPOIS
+
 exports.handler = async (event) => {
   try {
     const tableName = process.env.USERS_TABLE;
