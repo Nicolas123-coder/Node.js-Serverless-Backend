@@ -44,7 +44,7 @@ resources:
       Properties:
         Name: /DevSandbox/${sls:stage}/LambdaRoleArn
         Type: String
-        Value: !GetAtt LambdaRole.Arn
+        Value: !GetAtt SandboxLambdaRole.Arn
 
     # DYNAMO DB
     Users:
@@ -133,10 +133,10 @@ resources:
                     - lambda:InvokeFunction
                   Resource: "*"
 
-    LambdaRole:
+    SandboxLambdaRole:
       Type: AWS::IAM::Role
       Properties:
-        RoleName: "LambdaDevRole-${self:provider.stage}"
+        RoleName: "SandboxLambdaRole-${self:provider.stage}"
         AssumeRolePolicyDocument:
           Version: "2012-10-17"
           Statement:
@@ -149,7 +149,7 @@ resources:
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         Policies:
-          - PolicyName: "LambdaPolicy-${self:provider.stage}"
+          - PolicyName: "SandboxLambdaPolicy-${self:provider.stage}"
             PolicyDocument:
               Version: "2012-10-17"
               Statement:
@@ -200,7 +200,7 @@ resources:
         Name: ApiGatewayAuthorizerRoleArn-${sls:stage}
 
     LambdaRoleArn:
-      Value: !GetAtt LambdaRole.Arn
+      Value: !GetAtt SandboxLambdaRole.Arn
       Export:
         Name: LambdaRoleArn-${self:provider.stage}
 
