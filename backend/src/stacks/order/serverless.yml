@@ -16,6 +16,7 @@ provider:
     STAGE: ${sls:stage}
     ENABLE_LOGS: true
     ORDERS_TABLE: Orders-${self:provider.stage}
+    ORDERS_QUEUE_URL: !Ref OrdersQueue
     TOKEN_SECRET: ${ssm:/aws/reference/secretsmanager/JwtSecret}
     CORS_HEADERS: >
       {

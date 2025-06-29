@@ -78,6 +78,7 @@ jobs:
             "backend/src/stacks/auth"
             "backend/src/stacks/tenants"
             "backend/src/stacks/users"
+            "backend/src/stacks/orders"
             "infrastructure"
           )
 
