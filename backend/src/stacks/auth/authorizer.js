@@ -1,4 +1,6 @@
-const { logger, jwt, response, xray } = require("/opt/utils");
+const { logger, jwt, response } = require("/opt/utils");
+const { xray } = require("/opt/aws");
+
 const authorizerHandler = require("./handlers/authorizerHandler");
 
 exports.handler = async (event) => {
