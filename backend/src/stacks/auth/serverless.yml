@@ -7,6 +7,9 @@ provider:
   profile: DevSandbox
   stage: ${opt:stage, 'dev'}
   logRetentionInDays: 90
+  tracing:
+    lambda: true
+    apiGateway: true
   environment:
     ENABLE_LOGS: true
 

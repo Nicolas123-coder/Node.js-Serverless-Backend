@@ -1,4 +1,4 @@
-const { dynamoDB } = require("/opt/aws");
+const { dynamoDB, xray } = require("/opt/aws");
 const { logger, response } = require("/opt/utils");
 
 const listUsersHandler = require("./handlers/getUsersHandler");
@@ -6,9 +6,13 @@ const listUsersHandler = require("./handlers/getUsersHandler");
 // REMOVER DEPOIS
 
 exports.handler = async (event) => {
+  const traceId = xray.getTraceId();
+
   try {
     const tableName = process.env.USERS_TABLE;
     const queryStringParameters = event.queryStringParameters || {};
+
+    logger.info("X-Ray Trace ID", { traceId });
 
     return await listUsersHandler(
       dynamoDB,
