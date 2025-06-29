@@ -42,7 +42,7 @@ provider:
       Resource: !ImportValue AuthorizerLambdaArn-${sls:stage}
 
 custom:
-  awsLayerVersion: 2
+  awsLayerVersion: 3
   AwsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:awsLayer:${self:custom.awsLayerVersion}
   utilsLayerVersion: 2
   UtilsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:utilsLayer:${self:custom.utilsLayerVersion}
