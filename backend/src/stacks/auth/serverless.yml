@@ -24,7 +24,7 @@ provider:
 custom:
   awsLayerVersion: 6
   AwsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:awsLayer:${self:custom.awsLayerVersion}
-  utilsLayerVersion: 3
+  utilsLayerVersion: 4
   UtilsLayerArn: arn:aws:lambda:us-east-1:${aws:accountId}:layer:utilsLayer:${self:custom.utilsLayerVersion}
   ApiGatewayRestApiId: !ImportValue ApiGatewayRestApiId-${sls:stage}
   ApiGatewayAuthorizerRoleArn: !ImportValue ApiGatewayAuthorizerRoleArn-${sls:stage}
