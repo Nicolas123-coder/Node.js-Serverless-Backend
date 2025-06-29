@@ -9,7 +9,6 @@ provider:
   logRetentionInDays: 90
   tracing:
     lambda: true
-    apiGateway: true
   apiGateway:
     restApiId: !ImportValue ApiGatewayRestApiId-${sls:stage}
     restApiRootResourceId: !ImportValue ApiGatewayRootResourceId-${sls:stage}

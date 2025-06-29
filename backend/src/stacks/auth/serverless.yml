@@ -9,7 +9,6 @@ provider:
   logRetentionInDays: 90
   tracing:
     lambda: true
-    apiGateway: true
   environment:
     ENABLE_LOGS: true
 
