@@ -8,8 +8,10 @@ const {
   DeleteItemCommand,
 } = require("@aws-sdk/client-dynamodb");
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
+const { captureAWSv3Client } = require("aws-xray-sdk-core");
 
-const dynamoClient = new DynamoDBClient();
+const rawClient = new DynamoDBClient();
+const dynamoClient = captureAWSv3Client(rawClient);
 
 const DynamoDBUtils = {
   marshallItem: (obj) => {
