@@ -34,6 +34,7 @@ functions:
     handler: stacks/auth/authorizer.handler
     layers:
       - ${self:custom.UtilsLayerArn}
+      - ${self:custom.AwsLayerArn}
     memorySize: 256
     timeout: 10
     environment:
