@@ -1,4 +1,4 @@
-service: tenants
+service: orders
 
 provider:
   name: aws
@@ -15,7 +15,7 @@ provider:
   environment:
     STAGE: ${sls:stage}
     ENABLE_LOGS: true
-    TENANTS_TABLE: Tenants-${self:provider.stage}
+    ORDERS_TABLE: Orders-${self:provider.stage}
     TOKEN_SECRET: ${ssm:/aws/reference/secretsmanager/JwtSecret}
     CORS_HEADERS: >
       {
@@ -26,16 +26,13 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - dynamodb:Query
-        - dynamodb:Scan
         - dynamodb:PutItem
+        - dynamodb:Query
         - dynamodb:GetItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource:
-        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Tenants-${self:provider.stage}"
-        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Tenants-${self:provider.stage}/index/UsernameIndex"
-        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Tenants-${self:provider.stage}/index/TenantIndex"
+        - !Sub "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Orders-${self:provider.stage}"
 
     - Effect: "Allow"
       Action:
@@ -51,8 +48,8 @@ custom:
   ApiGatewayAuthorizerId: !ImportValue ApiGatewayAuthorizerId-${sls:stage}
 
 functions:
-  createTenant:
-    handler: stacks/tenants/lambdas/create.handler
+  createOrder:
+    handler: stacks/orders/create.handler
     layers:
       - ${self:custom.AwsLayerArn}
       - ${self:custom.UtilsLayerArn}
@@ -60,42 +57,8 @@ functions:
     timeout: 10
     events:
       - http:
-          path: tenants
+          path: orders
           method: post
-          cors: true
-          authorizer:
-            type: TOKEN
-            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
-            identitySource: method.request.header.Authorization
-
-  updateTenant:
-    handler: stacks/tenants/lambdas/update.handler
-    layers:
-      - ${self:custom.AwsLayerArn}
-      - ${self:custom.UtilsLayerArn}
-    memorySize: 256
-    timeout: 10
-    events:
-      - http:
-          path: tenants
-          method: put
-          cors: true
-          authorizer:
-            type: TOKEN
-            authorizerId: ${self:custom.ApiGatewayAuthorizerId}
-            identitySource: method.request.header.Authorization
-
-  listTenants:
-    handler: stacks/tenants/get.handler
-    layers:
-      - ${self:custom.AwsLayerArn}
-      - ${self:custom.UtilsLayerArn}
-    memorySize: 256
-    timeout: 10
-    events:
-      - http:
-          path: tenants
-          method: get
           cors: true
           authorizer:
             type: TOKEN

@@ -46,6 +46,16 @@ resources:
         Type: String
         Value: !GetAtt SandboxLambdaRole.Arn
 
+    # SQS
+    OrdersQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: OrdersQueue-${self:provider.stage}.fifo
+        FifoQueue: true
+        ContentBasedDeduplication: true
+        VisibilityTimeout: 30
+        MessageRetentionPeriod: 1209600 # 14 dias
+
     # DYNAMO DB
     Users:
       Type: AWS::DynamoDB::Table
@@ -203,6 +213,11 @@ resources:
       Value: !GetAtt SandboxLambdaRole.Arn
       Export:
         Name: LambdaRoleArn-${self:provider.stage}
+
+    OrdersQueueUrl:
+      Value: !Ref OrdersQueue
+      Export:
+        Name: OrdersQueueUrl-${sls:stage}
 
 layers:
   awsLayer:

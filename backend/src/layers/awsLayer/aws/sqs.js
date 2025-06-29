@@ -5,8 +5,10 @@ const {
   DeleteMessageCommand,
   GetQueueAttributesCommand,
 } = require("@aws-sdk/client-sqs");
+const { captureAWSv3Client } = require("aws-xray-sdk-core");
 
-const sqsClient = new SQSClient();
+const rawSqsClient = new SQSClient();
+const sqsClient = captureAWSv3Client(rawSqsClient);
 
 const SQSUtils = {
   /**
