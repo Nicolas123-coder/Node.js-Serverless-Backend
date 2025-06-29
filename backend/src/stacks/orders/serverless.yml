@@ -7,7 +7,6 @@ provider:
   profile: DevSandbox
   stage: ${opt:stage, 'dev'}
   logRetentionInDays: 90
-  # X-Ray
   tracing:
     lambda: true
   apiGateway:
